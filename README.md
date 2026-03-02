@@ -1,12 +1,13 @@
-# K-pop Releases Tracker
+# Reddit Music Tracker
 
-A simple, single-file web app that displays recent K-pop releases and teasers from r/kpop.
+A simple, single-file web app that displays recent music releases from r/kpop and r/popheads.
 
 ## Features
 
+- Switch between r/kpop and r/popheads subreddits
 - View new releases from the last 24 hours (default)
-- Browse teasers for upcoming releases in a separate section
-- Organized by type: Teasers (👀), Music Videos (🎬), Albums (💿), and Songs (🎵)
+- Browse teasers for upcoming releases (r/kpop only)
+- Organized by type: Music Videos (🎬), Albums (💿), and Songs (🎵)
 - Sorted by newest first within each category
 - Thumbnails on the left side of each post (🔥 placeholder if no image)
 - Shows post date and time in your local timezone
@@ -18,7 +19,7 @@ A simple, single-file web app that displays recent K-pop releases and teasers fr
 
 ### Online
 
-Visit the live site: [https://georgeryang.github.io/rkpop/](https://georgeryang.github.io/rkpop/)
+Visit the live site: [https://georgeryang.github.io/r-music-tracker/](https://georgeryang.github.io/r-music-tracker/)
 
 ### Offline
 
@@ -30,7 +31,12 @@ You can also save it to iCloud Drive to access it on your iPhone or iPad.
 
 ## How It Works
 
-The tracker fetches public posts from r/kpop using Reddit's JSON API and displays them in an easy-to-browse format. It uses a CORS proxy to work from any browser or device.
+The tracker fetches public posts from r/kpop or r/popheads using Reddit's JSON API and displays them in an easy-to-browse format. It uses a CORS proxy to work from any browser or device.
+
+### Subreddit-Specific Features
+
+- **r/kpop**: Supports both "New Releases" and "Teasers" modes with categories for Music Videos, Albums, Songs, and Teasers
+- **r/popheads**: Shows only new releases with categories for Music Videos (FRESH VIDEO), Albums (FRESH ALBUM), and Songs (FRESH)
 
 ## Technical Details
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-pop Tracker</title>
+    <title>Reddit Music Tracker</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
     <style>
         * {
@@ -43,6 +43,37 @@
         .subtitle {
             color: #666;
             font-size: 1rem;
+        }
+
+        .subreddit-selector {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .subreddit-btn {
+            padding: 10px 20px;
+            font-size: 15px;
+            border: 2px solid #e91e63;
+            background: white;
+            color: #e91e63;
+            cursor: pointer;
+            border-radius: 24px;
+            min-height: 40px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .subreddit-btn:hover {
+            background: #e91e63;
+            color: white;
+        }
+
+        .subreddit-btn.active {
+            background: #e91e63;
+            color: white;
         }
 
         .controls {
@@ -229,6 +260,10 @@
                 font-size: 1.5rem;
             }
 
+            .subreddit-selector {
+                flex-direction: column;
+            }
+
             .controls {
                 flex-direction: column;
             }
@@ -247,9 +282,14 @@
 <body>
     <div class="container">
         <header>
-            <h1>🔥 K-pop Tracker</h1>
-            <p class="subtitle">New releases and teasers from r/kpop</p>
+            <h1>🔥 Reddit Music Tracker</h1>
+            <p class="subtitle">New releases from r/kpop and r/popheads</p>
         </header>
+
+        <div class="subreddit-selector">
+            <button class="subreddit-btn active" onclick="switchSubreddit('kpop')">r/kpop</button>
+            <button class="subreddit-btn" onclick="switchSubreddit('popheads')">r/popheads</button>
+        </div>
 
         <div class="controls">
             <button id="btn-releases" class="active">New Releases</button>
@@ -303,6 +343,42 @@
     </div>
 
     <script>
+        // Active subreddit state
+        let activeSubreddit = 'kpop';
+        let currentMode = 'releases';
+
+        // Switch subreddit handler
+        function switchSubreddit(subreddit) {
+            activeSubreddit = subreddit;
+            
+            // Update button styles
+            document.querySelectorAll('.subreddit-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show/hide mode buttons based on subreddit
+            const teasersBtn = document.getElementById('btn-teasers');
+            const releasesBtn = document.getElementById('btn-releases');
+            
+            if (subreddit === 'kpop') {
+                teasersBtn.style.display = 'inline-block';
+                releasesBtn.style.display = 'inline-block';
+            } else {
+                teasersBtn.style.display = 'none';
+                releasesBtn.style.display = 'none';
+                // Switch to releases mode if currently in teasers mode
+                if (currentMode === 'teasers') {
+                    currentMode = 'releases';
+                }
+            }
+            
+            // Reload content
+            const endDate = new Date();
+            const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+            loadReleases(startDate, endDate, currentMode);
+        }
+
         // Toggle category collapse/expand
         function toggleCategory(category) {
             const content = document.getElementById(`${category}-content`);
@@ -317,12 +393,13 @@
             try {
                 let allPosts = [];
                 let after = null;
+                const subreddit = activeSubreddit === 'kpop' ? 'kpop' : 'popheads';
                 
                 // Fetch multiple pages to get ~100 posts
                 for (let i = 0; i < 4; i++) {
                     const redditUrl = after 
-                        ? `https://www.reddit.com/r/kpop.json?limit=25&after=${after}`
-                        : 'https://www.reddit.com/r/kpop.json?limit=25';
+                        ? `https://www.reddit.com/r/${subreddit}.json?limit=25&after=${after}`
+                        : `https://www.reddit.com/r/${subreddit}.json?limit=25`;
                     
                     // Use CORS proxy to bypass browser restrictions
                     const url = `https://corsproxy.io/?${encodeURIComponent(redditUrl)}`;
@@ -368,29 +445,37 @@
         function categorizePost(post) {
             const flair = post.link_flair_text.toLowerCase().trim();
             
-            // Debug: log all flairs to console
-            if (flair) {
-                console.log('Flair found:', post.link_flair_text, '→', flair);
+            if (!flair) return null;
+            
+            if (activeSubreddit === 'kpop') {
+                // r/kpop flair patterns
+                if (flair.includes('mv') || flair.includes('m/v') || flair.includes('music video')) {
+                    return 'mv';
+                }
+                if (flair.includes('album') || flair.includes('ep') || flair.includes('mini')) {
+                    return 'album';
+                }
+                if (flair.includes('audio')) {
+                    return 'song';
+                }
+                if (flair.includes('teaser')) {
+                    return 'teaser';
+                }
+            } else {
+                // r/popheads flair patterns - check specific patterns first
+                if (flair.includes('fresh video')) {
+                    return 'mv';
+                }
+                if (flair.includes('fresh album')) {
+                    return 'album';
+                }
+                // Match "fresh" by itself (not part of "fresh video" or "fresh album")
+                if (flair === 'fresh' || flair === '[fresh]') {
+                    return 'song';
+                }
             }
             
-            // Music Videos: MV, M/V, Music Video
-            if (flair.includes('mv') || flair.includes('m/v') || flair.includes('music video')) {
-                console.log('  → Categorized as MV');
-                return 'mv';
-            } 
-            // Albums: Album Release, Album, EP, Mini Album
-            else if (flair.includes('album') || flair.includes('ep') || flair.includes('mini')) {
-                console.log('  → Categorized as Album');
-                return 'album';
-            } 
-            // Songs: Audio
-            else if (flair.includes('audio')) {
-                console.log('  → Categorized as Song');
-                return 'song';
-            }
-            
-            console.log('  → Not categorized (flair:', flair, ')');
-            return null; // Skip posts without matching flair
+            return null;
         }
 
         // Categorize all posts
@@ -564,6 +649,7 @@
             
             // Handle New Releases button
             btnReleases.addEventListener('click', () => {
+                currentMode = 'releases';
                 btnReleases.classList.add('active');
                 btnTeasers.classList.remove('active');
                 
@@ -574,6 +660,7 @@
             
             // Handle Teasers button
             btnTeasers.addEventListener('click', () => {
+                currentMode = 'teasers';
                 btnTeasers.classList.add('active');
                 btnReleases.classList.remove('active');
                 

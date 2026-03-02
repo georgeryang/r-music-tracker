@@ -224,16 +224,6 @@
             margin-bottom: 3px;
         }
 
-        .release-title a {
-            color: #333;
-            text-decoration: none;
-            pointer-events: none;
-        }
-
-        .release-title a:hover {
-            color: #e91e63;
-        }
-
         .release-date {
             color: #666;
             font-size: 0.85rem;
@@ -612,20 +602,8 @@
             
             try {
                 const posts = await fetchRedditPosts();
-                console.log('Total posts fetched:', posts.length);
-                
                 const filtered = filterPostsByDateRange(posts, startDate, endDate);
-                console.log('Posts in date range:', filtered.length);
-                console.log('Date range:', startDate, 'to', endDate);
-                console.log('Mode:', mode);
-                
                 const categorized = categorizePosts(filtered, mode);
-                console.log('Categorized:', {
-                    teaser: categorized.teaser.length,
-                    mv: categorized.mv.length,
-                    album: categorized.album.length,
-                    song: categorized.song.length
-                });
                 
                 // Update section headers based on mode
                 updateSectionHeaders(mode);

@@ -54,14 +54,14 @@
         }
 
         .subreddit-btn {
-            padding: 10px 20px;
-            font-size: 15px;
+            padding: 12px 24px;
+            font-size: 16px;
             border: 2px solid #e91e63;
             background: white;
             color: #e91e63;
             cursor: pointer;
             border-radius: 24px;
-            min-height: 40px;
+            min-height: 48px;
             transition: all 0.3s ease;
             font-weight: 500;
         }
@@ -86,13 +86,13 @@
 
         button {
             padding: 12px 24px;
-            font-size: 16px;
+            font-size: 14px;
             border: 2px solid #e91e63;
             background: white;
             color: #e91e63;
             cursor: pointer;
             border-radius: 24px;
-            min-height: 44px;
+            min-height: 40px;
             transition: all 0.3s ease;
             font-weight: 500;
         }
@@ -410,13 +410,29 @@
                     }
                     const data = await response.json();
                     
-                    const posts = data.data.children.map(child => ({
-                        title: child.data.title,
-                        url: 'https://www.reddit.com' + child.data.permalink,
-                        created_utc: child.data.created_utc,
-                        link_flair_text: child.data.link_flair_text || '',
-                        thumbnail: child.data.thumbnail || ''
-                    }));
+                    const posts = data.data.children.map(child => {
+                        let thumbnail = child.data.thumbnail || '';
+                        
+                        // Try to get better image from preview if thumbnail is not available
+                        if (!thumbnail || thumbnail === 'self' || thumbnail === 'default') {
+                            if (child.data.preview && child.data.preview.images && child.data.preview.images.length > 0) {
+                                // Get the source image from preview
+                                const previewImage = child.data.preview.images[0].source;
+                                if (previewImage && previewImage.url) {
+                                    // Decode HTML entities in the URL
+                                    thumbnail = previewImage.url.replace(/&amp;/g, '&');
+                                }
+                            }
+                        }
+                        
+                        return {
+                            title: child.data.title,
+                            url: 'https://www.reddit.com' + child.data.permalink,
+                            created_utc: child.data.created_utc,
+                            link_flair_text: child.data.link_flair_text || '',
+                            thumbnail: thumbnail
+                        };
+                    });
                     
                     allPosts = allPosts.concat(posts);
                     after = data.data.after;

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-pop Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #e91e63;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: 2px solid #e91e63;
+            background: white;
+            color: #e91e63;
+            cursor: pointer;
+            border-radius: 24px;
+            min-height: 44px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #e91e63;
+            color: white;
+        }
+
+        button.active {
+            background: #e91e63;
+            color: white;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        #error {
+            text-align: center;
+            padding: 20px;
+            color: #d32f2f;
+            background: #ffebee;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .category {
+            margin-bottom: 40px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e91e63;
+        }
+
+        .category-header:hover h2 {
+            color: #c2185b;
+        }
+
+        .category h2 {
+            color: #e91e63;
+            font-size: 1.5rem;
+            margin: 0;
+            transition: color 0.2s ease;
+        }
+
+        .collapse-icon {
+            font-size: 1.2rem;
+            color: #e91e63;
+            transition: transform 0.3s ease;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .category-content {
+            max-height: 5000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .category-content.collapsed {
+            max-height: 0;
+        }
+
+        .release-list {
+            list-style: none;
+        }
+
+        .release-item {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: #fafafa;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .release-item:hover {
+            background: #f0f0f0;
+        }
+
+        .release-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .release-thumbnail {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            object-fit: cover;
+            flex-shrink: 0;
+            order: -1;
+        }
+
+        .release-thumbnail.placeholder {
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 24px;
+        }
+
+        .release-title {
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+
+        .release-title a {
+            color: #333;
+            text-decoration: none;
+            pointer-events: none;
+        }
+
+        .release-title a:hover {
+            color: #e91e63;
+        }
+
+        .release-date {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .release-thumbnail {
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔥 K-pop Tracker</h1>
+            <p class="subtitle">New releases and teasers from r/kpop</p>
+        </header>
+
+        <div class="controls">
+            <button id="btn-releases" class="active">New Releases</button>
+            <button id="btn-teasers">Teasers</button>
+        </div>
+
+        <div id="loading">Loading releases...</div>
+        <div id="error"></div>
+
+        <div id="results" class="results">
+            <div class="category" id="teaser-section">
+                <div class="category-header" onclick="toggleCategory('teaser')">
+                    <h2>👀 Teasers</h2>
+                    <span class="collapse-icon" id="teaser-icon">▼</span>
+                </div>
+                <div class="category-content" id="teaser-content">
+                    <ul id="teaser-list" class="release-list"></ul>
+                </div>
+            </div>
+
+            <div class="category" id="mv-section">
+                <div class="category-header" onclick="toggleCategory('mv')">
+                    <h2>🎬 Music Videos</h2>
+                    <span class="collapse-icon" id="mv-icon">▼</span>
+                </div>
+                <div class="category-content" id="mv-content">
+                    <ul id="mv-list" class="release-list"></ul>
+                </div>
+            </div>
+
+            <div class="category" id="album-section">
+                <div class="category-header" onclick="toggleCategory('album')">
+                    <h2>💿 Albums</h2>
+                    <span class="collapse-icon" id="album-icon">▼</span>
+                </div>
+                <div class="category-content" id="album-content">
+                    <ul id="album-list" class="release-list"></ul>
+                </div>
+            </div>
+
+            <div class="category" id="song-section">
+                <div class="category-header" onclick="toggleCategory('song')">
+                    <h2>🎵 Songs</h2>
+                    <span class="collapse-icon" id="song-icon">▼</span>
+                </div>
+                <div class="category-content" id="song-content">
+                    <ul id="song-list" class="release-list"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle category collapse/expand
+        function toggleCategory(category) {
+            const content = document.getElementById(`${category}-content`);
+            const icon = document.getElementById(`${category}-icon`);
+            
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('collapsed');
+        }
+
+        // Fetch posts from Reddit
+        async function fetchRedditPosts() {
+            try {
+                let allPosts = [];
+                let after = null;
+                
+                // Fetch multiple pages to get ~100 posts
+                for (let i = 0; i < 4; i++) {
+                    const redditUrl = after 
+                        ? `https://www.reddit.com/r/kpop.json?limit=25&after=${after}`
+                        : 'https://www.reddit.com/r/kpop.json?limit=25';
+                    
+                    // Use CORS proxy to bypass browser restrictions
+                    const url = `https://corsproxy.io/?${encodeURIComponent(redditUrl)}`;
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch');
+                    }
+                    const data = await response.json();
+                    
+                    const posts = data.data.children.map(child => ({
+                        title: child.data.title,
+                        url: 'https://www.reddit.com' + child.data.permalink,
+                        created_utc: child.data.created_utc,
+                        link_flair_text: child.data.link_flair_text || '',
+                        thumbnail: child.data.thumbnail || ''
+                    }));
+                    
+                    allPosts = allPosts.concat(posts);
+                    after = data.data.after;
+                    
+                    if (!after) break; // No more pages
+                }
+                
+                return allPosts;
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+                throw new Error('Failed to load posts from Reddit');
+            }
+        }
+
+        // Filter posts by date range
+        function filterPostsByDateRange(posts, startDate, endDate) {
+            const startTimestamp = Math.floor(startDate.getTime() / 1000);
+            const endTimestamp = Math.floor(endDate.getTime() / 1000);
+            
+            return posts.filter(post => 
+                post.created_utc >= startTimestamp && post.created_utc <= endTimestamp
+            );
+        }
+
+        // Categorize post by flair
+        function categorizePost(post) {
+            const flair = post.link_flair_text.toLowerCase().trim();
+            
+            // Debug: log all flairs to console
+            if (flair) {
+                console.log('Flair found:', post.link_flair_text, '→', flair);
+            }
+            
+            // Music Videos: MV, M/V, Music Video
+            if (flair.includes('mv') || flair.includes('m/v') || flair.includes('music video')) {
+                console.log('  → Categorized as MV');
+                return 'mv';
+            } 
+            // Albums: Album Release, Album, EP, Mini Album
+            else if (flair.includes('album') || flair.includes('ep') || flair.includes('mini')) {
+                console.log('  → Categorized as Album');
+                return 'album';
+            } 
+            // Songs: Audio
+            else if (flair.includes('audio')) {
+                console.log('  → Categorized as Song');
+                return 'song';
+            }
+            
+            console.log('  → Not categorized (flair:', flair, ')');
+            return null; // Skip posts without matching flair
+        }
+
+        // Categorize all posts
+        function categorizePosts(posts, mode = 'releases') {
+            const categorized = {
+                teaser: [],
+                mv: [],
+                album: [],
+                song: []
+            };
+            
+            posts.forEach(post => {
+                if (mode === 'teasers') {
+                    // For teasers mode, only show posts with "teaser" flair
+                    const flair = post.link_flair_text.toLowerCase().trim();
+                    if (flair.includes('teaser')) {
+                        categorized.teaser.push(post);
+                    }
+                } else {
+                    // For releases mode, use normal categorization
+                    const category = categorizePost(post);
+                    if (category && categorized[category]) {
+                        categorized[category].push(post);
+                    }
+                }
+            });
+            
+            return categorized;
+        }
+
+        // Render results to DOM
+        function renderResults(categorized) {
+            const teaserList = document.getElementById('teaser-list');
+            const mvList = document.getElementById('mv-list');
+            const albumList = document.getElementById('album-list');
+            const songList = document.getElementById('song-list');
+            
+            // Clear previous results
+            teaserList.innerHTML = '';
+            mvList.innerHTML = '';
+            albumList.innerHTML = '';
+            songList.innerHTML = '';
+            
+            // Render each category
+            renderCategory(teaserList, categorized.teaser);
+            renderCategory(mvList, categorized.mv);
+            renderCategory(albumList, categorized.album);
+            renderCategory(songList, categorized.song);
+            
+            // Show results
+            document.getElementById('results').style.display = 'block';
+        }
+
+        // Render a single category
+        function renderCategory(listElement, posts) {
+            if (posts.length === 0) {
+                listElement.innerHTML = '<li class="empty-message">No releases found</li>';
+                return;
+            }
+            
+            // Sort posts by timestamp, newest first
+            const sortedPosts = [...posts].sort((a, b) => b.created_utc - a.created_utc);
+            
+            sortedPosts.forEach(post => {
+                const a = document.createElement('a');
+                a.href = post.url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.className = 'release-item';
+                
+                const date = new Date(post.created_utc * 1000);
+                const dateStr = date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+                const timeStr = date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                
+                // Check if thumbnail is valid (not default Reddit placeholders)
+                const hasValidThumbnail = post.thumbnail && 
+                    post.thumbnail.startsWith('http') && 
+                    !post.thumbnail.includes('self') && 
+                    !post.thumbnail.includes('default');
+                
+                a.innerHTML = `
+                    ${hasValidThumbnail 
+                        ? `<img src="${post.thumbnail}" alt="Thumbnail" class="release-thumbnail" onerror="this.outerHTML='<div class=\\'release-thumbnail placeholder\\'>🔥</div>'">` 
+                        : '<div class="release-thumbnail placeholder">🔥</div>'
+                    }
+                    <div class="release-content">
+                        <div class="release-title">
+                            <span>${post.title}</span>
+                        </div>
+                        <div class="release-date">${dateStr} at ${timeStr}</div>
+                    </div>
+                `;
+                
+                const li = document.createElement('li');
+                li.appendChild(a);
+                listElement.appendChild(li);
+            });
+        }
+
+        // Main function to load and display releases
+        async function loadReleases(startDate, endDate, mode = 'releases') {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const results = document.getElementById('results');
+            
+            // Show loading
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            results.style.display = 'none';
+            
+            try {
+                const posts = await fetchRedditPosts();
+                console.log('Total posts fetched:', posts.length);
+                
+                const filtered = filterPostsByDateRange(posts, startDate, endDate);
+                console.log('Posts in date range:', filtered.length);
+                console.log('Date range:', startDate, 'to', endDate);
+                console.log('Mode:', mode);
+                
+                const categorized = categorizePosts(filtered, mode);
+                console.log('Categorized:', {
+                    teaser: categorized.teaser.length,
+                    mv: categorized.mv.length,
+                    album: categorized.album.length,
+                    song: categorized.song.length
+                });
+                
+                // Update section headers based on mode
+                updateSectionHeaders(mode);
+                renderResults(categorized);
+            } catch (err) {
+                error.textContent = err.message || 'Failed to load releases';
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Update section headers based on mode
+        function updateSectionHeaders(mode) {
+            const teaserSection = document.getElementById('teaser-section');
+            const mvSection = document.getElementById('mv-section');
+            const albumSection = document.getElementById('album-section');
+            const songSection = document.getElementById('song-section');
+            
+            if (mode === 'teasers') {
+                teaserSection.style.display = 'block';
+                mvSection.style.display = 'none';
+                albumSection.style.display = 'none';
+                songSection.style.display = 'none';
+            } else {
+                teaserSection.style.display = 'none';
+                mvSection.style.display = 'block';
+                albumSection.style.display = 'block';
+                songSection.style.display = 'block';
+            }
+        }
+
+        // Initialize app
+        function initializeApp() {
+            const btnReleases = document.getElementById('btn-releases');
+            const btnTeasers = document.getElementById('btn-teasers');
+            
+            // Handle New Releases button
+            btnReleases.addEventListener('click', () => {
+                btnReleases.classList.add('active');
+                btnTeasers.classList.remove('active');
+                
+                const endDate = new Date();
+                const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+                loadReleases(startDate, endDate, 'releases');
+            });
+            
+            // Handle Teasers button
+            btnTeasers.addEventListener('click', () => {
+                btnTeasers.classList.add('active');
+                btnReleases.classList.remove('active');
+                
+                const endDate = new Date();
+                const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+                loadReleases(startDate, endDate, 'teasers');
+            });
+            
+            // Auto-load New Releases on page load
+            const endDate = new Date();
+            const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+            loadReleases(startDate, endDate, 'releases');
+        }
+
+        // Start app when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>

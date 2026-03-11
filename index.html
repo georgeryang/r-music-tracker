@@ -487,11 +487,11 @@
                 
                 // Fetch multiple pages to get ~100 posts
                 for (let i = 0; i < 4; i++) {
-                    const redditUrl = after 
-                        ? `https://www.reddit.com/r/${subreddit}.json?limit=25&after=${after}`
-                        : `https://www.reddit.com/r/${subreddit}.json?limit=25`;
-                    
-                    const response = await fetch(redditUrl);
+                    const redditPath = after
+                        ? `/r/${subreddit}.json?limit=25&after=${after}`
+                        : `/r/${subreddit}.json?limit=25`;
+
+                    const response = await fetch(`https://reddit-proxy.gryangnyc.workers.dev${redditPath}`);
                     if (!response.ok) {
                         throw new Error('Failed to fetch');
                     }

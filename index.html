@@ -491,10 +491,7 @@
                         ? `https://www.reddit.com/r/${subreddit}.json?limit=25&after=${after}`
                         : `https://www.reddit.com/r/${subreddit}.json?limit=25`;
                     
-                    // Use CORS proxy to bypass browser restrictions
-                    const url = `https://corsproxy.io/?${encodeURIComponent(redditUrl)}`;
-                    
-                    const response = await fetch(url);
+                    const response = await fetch(redditUrl);
                     if (!response.ok) {
                         throw new Error('Failed to fetch');
                     }

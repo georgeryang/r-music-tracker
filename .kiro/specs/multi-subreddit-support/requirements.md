@@ -79,10 +79,9 @@ This feature extends the Reddit Music Tracker to support multiple subreddits. Cu
 
 #### Acceptance Criteria
 
-1. WHEN the Active_Subreddit is r/kpop, THE Application SHALL display both "New Releases" and "Teasers" mode tabs
-2. WHEN the Active_Subreddit is r/popheads, THE Application SHALL hide the mode tabs entirely
-3. WHEN the Active_Subreddit is r/popheads, THE Application SHALL NOT display the "Teasers" mode tab
-4. WHEN the Active_Subreddit is r/popheads, THE Application SHALL NOT display the Teasers accordion section
+1. WHEN the Active_Subreddit is r/kpop, THE Application SHALL display the tab bar with both "New Releases" and "Teasers" mode tabs
+2. WHEN the Active_Subreddit is r/popheads, THE Application SHALL hide the entire tab bar
+3. WHEN the Active_Subreddit is r/popheads, THE Application SHALL NOT display the Teasers accordion section
 
 ### Requirement 7: User Interface Consistency
 

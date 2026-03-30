@@ -327,7 +327,7 @@
             <button id="btn-refresh" class="refresh-btn" aria-label="Refresh">↻</button>
         </div>
 
-        <div class="controls">
+        <div class="controls" id="controls">
             <button id="btn-releases" class="tab-btn active">New Releases</button>
             <button id="btn-teasers" class="tab-btn">Teasers</button>
         </div>
@@ -405,11 +405,9 @@
             event.target.classList.add('active');
 
             if (subreddit === 'kpop') {
-                dom.btnTeasers.style.display = '';
-                dom.btnReleases.style.display = '';
+                dom.controls.style.display = '';
             } else {
-                dom.btnTeasers.style.display = 'none';
-                dom.btnReleases.style.display = 'none';
+                dom.controls.style.display = 'none';
                 if (currentMode === 'teasers') currentMode = 'releases';
             }
 
@@ -627,6 +625,7 @@
         function initializeApp() {
             // Cache all DOM references once
             dom = {
+                controls: document.getElementById('controls'),
                 btnReleases: document.getElementById('btn-releases'),
                 btnTeasers: document.getElementById('btn-teasers'),
                 loading: document.getElementById('loading'),

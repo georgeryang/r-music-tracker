@@ -27,7 +27,7 @@ No architectural changes. The existing single-file structure remains unchanged.
 5. Fetch both subreddits in parallel on page load with `limit=100` (single request each)
 6. Cache posts per subreddit; switching subreddits/tabs uses cache only (no network calls)
 7. Refresh button fetches both subreddits in parallel and updates the cache
-8. Hide mode tabs when `activeSubreddit === 'popheads'`
+8. Hide the entire tab bar (`.controls` container) when `activeSubreddit === 'popheads'`
 9. Track and restore collapse state independently per subreddit via `collapsedState` object
 
 No automatic background fetching. No new systems, no configuration objects, no abstractions.
@@ -200,9 +200,9 @@ State variables: `activeSubreddit`, `currentMode`, `collapsedState` (per-subredd
 
 ### Property 5: Teasers Tab Visibility
 
-*For any* value of `activeSubreddit`, the mode tabs (New Releases and Teasers) should be visible only when `activeSubreddit === 'kpop'`.
+*For any* value of `activeSubreddit`, the entire tab bar (`.controls` container) should be visible only when `activeSubreddit === 'kpop'`.
 
-**Validates: Requirements 6.1, 6.2, 6.3**
+**Validates: Requirements 6.1, 6.2**
 
 ### Property 6: Consistent Category Display
 
@@ -266,7 +266,7 @@ Manual testing only. No additional test infrastructure or dependencies.
 - [ ] Clicking r/popheads switches instantly from cache (no loading spinner)
 - [ ] Clicking r/kpop switches back instantly from cache
 - [ ] Mode tabs (New Releases / Teasers) display as underline tabs, not pill buttons
-- [ ] Mode tabs visible for r/kpop, hidden for r/popheads
+- [ ] Entire tab bar visible for r/kpop, hidden for r/popheads
 - [ ] Switching from teasers mode to r/popheads switches to releases mode
 - [ ] r/kpop flairs categorize correctly (MV, Album, Audio, Teaser)
 - [ ] r/popheads flairs categorize correctly (FRESH VIDEO, FRESH ALBUM, FRESH)

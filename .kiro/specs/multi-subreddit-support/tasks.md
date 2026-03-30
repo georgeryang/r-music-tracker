@@ -39,7 +39,43 @@ Add support for r/popheads alongside r/kpop. Minimal changes: add subreddit sele
   - Maintain mode when staying on r/kpop
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
+- [x] 7. Convert mode buttons to tab-style UI
+  - Replace pill-button styling with underline tab indicators
+  - Add `.tab-btn` CSS class with bottom-border active state
+  - Update dark mode styles for tabs
+  - Update responsive styles for tabs on mobile
+
+- [x] 8. Add per-subreddit collapse state tracking
+  - Add `collapsedState` object keyed by subreddit name
+  - Save collapse state in `toggleCategory()` under current subreddit
+  - Add `restoreCollapseState()` function to restore state on subreddit switch
+  - Call `restoreCollapseState()` in `switchSubreddit()`
+  - _Requirements: 7.4_
+
+- [x] 9. Performance optimization
+  - CSS custom properties to eliminate dark mode duplication
+  - Cached DOM references in `dom` object
+  - DocumentFragment for batch DOM insertion
+  - Reusable `Intl.DateTimeFormat` instances
+  - Single `limit=100` request instead of 4 sequential `limit=25` requests
+  - Pre-normalized flair at fetch time
+  - `loading="lazy"` on thumbnail images
+  - `<link rel="preconnect">` for CORS proxy domain
+  - Specific CSS transition properties instead of `transition: all`
+  - DOM API with `textContent` instead of innerHTML (XSS prevention + performance)
+  - Decode `&amp;` in both thumbnail and preview URLs from Reddit API
+
+- [x] 10. Add caching and manual refresh
+  - Add `postCache` object keyed by subreddit name
+  - Fetch both subreddits in parallel on page load
+  - Switching subreddits/tabs uses cache only (no network requests)
+  - Add circular refresh icon button in subreddit selector row
+  - Refresh button fetches both subreddits in parallel and updates cache
+  - No automatic background fetching or timers
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+
 ## Notes
 
 - All changes are additive to the existing single-file HTML structure
 - No new abstractions or architectural changes needed
+- No automatic network requests — Reddit API is only called on page load and manual refresh

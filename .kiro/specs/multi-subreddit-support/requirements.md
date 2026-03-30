@@ -30,15 +30,16 @@ This feature extends the Reddit Music Tracker to support multiple subreddits. Cu
 
 ### Requirement 2: Subreddit-Specific Data Fetching
 
-**User Story:** As a user, I want the application to fetch posts from the selected subreddit, so that I see relevant content for my choice.
+**User Story:** As a user, I want the application to fetch posts from both subreddits, so that I can switch between them instantly.
 
 #### Acceptance Criteria
 
-1. WHEN fetching posts, THE Reddit_API SHALL use the Active_Subreddit in the API endpoint
-2. THE Application SHALL fetch approximately 100 posts from the Active_Subreddit
-3. WHEN the Active_Subreddit is r/kpop, THE Reddit_API SHALL request from https://www.reddit.com/r/kpop.json
-4. WHEN the Active_Subreddit is r/popheads, THE Reddit_API SHALL request from https://www.reddit.com/r/popheads.json
+1. WHEN the page loads, THE Application SHALL fetch 100 posts from both r/kpop and r/popheads in parallel
+2. THE Application SHALL cache fetched posts per subreddit in memory
+3. WHEN the Active_Subreddit changes, THE Application SHALL display cached posts without making additional network requests
+4. THE Application SHALL NOT make any automatic or background network requests after the initial load
 5. THE Application SHALL continue using the CORS proxy for all Reddit_API requests
+6. THE Application SHALL fetch posts using a single request with `limit=100` per subreddit
 
 ### Requirement 3: Flair Mapping for r/kpop
 
@@ -72,15 +73,15 @@ This feature extends the Reddit Music Tracker to support multiple subreddits. Cu
 3. WHEN Mode is "Teasers" AND Active_Subreddit changes to r/popheads, THE Application SHALL switch to "New Releases" mode
 4. WHEN Active_Subreddit changes from r/popheads to r/kpop, THE Application SHALL maintain "New Releases" mode
 
-### Requirement 6: Conditional Teasers Button Display
+### Requirement 6: Conditional Teasers Tab Display
 
-**User Story:** As a user, I want to see only the mode buttons that are relevant to the active subreddit, so that I don't encounter non-functional features.
+**User Story:** As a user, I want to see only the mode tabs that are relevant to the active subreddit, so that I don't encounter non-functional features.
 
 #### Acceptance Criteria
 
-1. WHEN the Active_Subreddit is r/kpop, THE Application SHALL display both "New Releases" and "Teasers" mode buttons
-2. WHEN the Active_Subreddit is r/popheads, THE Application SHALL display only the "New Releases" mode button
-3. WHEN the Active_Subreddit is r/popheads, THE Application SHALL NOT display the "Teasers" mode button
+1. WHEN the Active_Subreddit is r/kpop, THE Application SHALL display both "New Releases" and "Teasers" mode tabs
+2. WHEN the Active_Subreddit is r/popheads, THE Application SHALL hide the mode tabs entirely
+3. WHEN the Active_Subreddit is r/popheads, THE Application SHALL NOT display the "Teasers" mode tab
 4. WHEN the Active_Subreddit is r/popheads, THE Application SHALL NOT display the Teasers accordion section
 
 ### Requirement 7: User Interface Consistency
@@ -92,7 +93,7 @@ This feature extends the Reddit Music Tracker to support multiple subreddits. Cu
 1. THE Application SHALL maintain the same accordion structure for content categories across all subreddits
 2. THE Application SHALL display Music Videos, Albums, and Songs categories for all subreddits
 3. THE Application SHALL maintain the same styling and layout when switching between subreddits
-4. THE Application SHALL preserve the collapse/expand state of categories when switching subreddits
+4. THE Application SHALL preserve the collapse/expand state of categories independently per subreddit, so that collapsing a category in one subreddit does not affect the same category in another subreddit
 
 ### Requirement 8: Visual Feedback for Active Subreddit
 
@@ -105,7 +106,19 @@ This feature extends the Reddit Music Tracker to support multiple subreddits. Cu
 3. THE Application SHALL display only one subreddit as active at any time
 4. WHEN the page loads, THE Subreddit_Selector SHALL show r/kpop as active
 
-### Requirement 9: Date Range Filtering
+### Requirement 9: Manual Refresh
+
+**User Story:** As a user, I want to manually refresh data when I choose, so that I control when network requests are made and avoid being rate-limited by Reddit.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL display a refresh button in the subreddit selector row
+2. WHEN the refresh button is clicked, THE Application SHALL fetch fresh data for both r/kpop and r/popheads in parallel
+3. WHEN the refresh completes, THE Application SHALL update the cache and re-render the active subreddit's content
+4. THE Application SHALL NOT make any automatic or scheduled network requests
+5. THE Application SHALL show a loading indicator while the refresh is in progress
+
+### Requirement 10: Date Range Filtering
 
 **User Story:** As a user, I want date range filtering to work consistently across all subreddits, so that I see recent content regardless of my selection.
 

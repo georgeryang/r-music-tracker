@@ -5,13 +5,15 @@ A simple, single-file web app that displays recent music releases from r/kpop an
 ## Features
 
 - Switch between r/kpop and r/popheads subreddits
+- Tab-based navigation between New Releases and Teasers (r/kpop only)
 - View new releases from the last 24 hours (default)
 - Browse teasers for upcoming releases (r/kpop only)
 - Organized by type: Music Videos (🎬), Albums (💿), and Songs (🎵)
 - Sorted by newest first within each category
 - Thumbnails on the left side of each post (🔥 placeholder if no image)
 - Shows post date and time in your local timezone
-- Collapsible sections for easy navigation
+- Collapsible sections with independent state per subreddit
+- Manual refresh button to update data for both subreddits
 - Works on desktop, iPad, and mobile
 - No installation required
 
@@ -31,7 +33,9 @@ You can also save it to iCloud Drive to access it on your iPhone or iPad.
 
 ## How It Works
 
-The tracker fetches public posts from r/kpop or r/popheads using Reddit's JSON API and displays them in an easy-to-browse format. It uses a CORS proxy to work from any browser or device.
+The tracker fetches public posts from r/kpop and r/popheads using Reddit's JSON API and displays them in an easy-to-browse format. It uses a CORS proxy to work from any browser or device.
+
+On page load, both subreddits are fetched in parallel and cached. Switching between subreddits and tabs uses cached data instantly with no additional network calls. Data is only re-fetched when the user presses the refresh button, which updates both subreddits at once.
 
 ### Subreddit-Specific Features
 
@@ -43,7 +47,11 @@ The tracker fetches public posts from r/kpop or r/popheads using Reddit's JSON A
 - Single HTML file with embedded CSS and JavaScript
 - No build process or dependencies
 - Uses Reddit's public JSON API (no authentication needed)
-- Fetches ~100 most recent posts
+- Fetches 100 posts per subreddit in a single request
+- Both subreddits fetched in parallel on load and refresh
+- No automatic background fetching — data only updates on manual refresh
+- Cached DOM references and DocumentFragment for efficient rendering
+- CSS custom properties for theme support (light/dark mode)
 - Responsive design for mobile and desktop
 
 ## Privacy

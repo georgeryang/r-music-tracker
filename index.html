@@ -322,8 +322,8 @@
         </header>
 
         <div class="subreddit-selector">
-            <button class="subreddit-btn active" onclick="switchSubreddit('kpop')">r/kpop</button>
-            <button class="subreddit-btn" onclick="switchSubreddit('popheads')">r/popheads</button>
+            <button class="subreddit-btn active" onclick="switchSubreddit('kpop', this)">r/kpop</button>
+            <button class="subreddit-btn" onclick="switchSubreddit('popheads', this)">r/popheads</button>
             <button id="btn-refresh" class="refresh-btn" aria-label="Refresh">↻</button>
         </div>
 
@@ -398,11 +398,11 @@
             return { start: new Date(end.getTime() - 86400000), end };
         }
 
-        function switchSubreddit(subreddit) {
+        function switchSubreddit(subreddit, btn) {
             activeSubreddit = subreddit;
 
-            document.querySelectorAll('.subreddit-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.subreddit-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
 
             if (subreddit === 'kpop') {
                 dom.controls.style.display = '';
@@ -437,7 +437,13 @@
             const url = `https://reddit-proxy.gryangnyc.workers.dev/r/${subreddit}.json?limit=100`;
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to fetch');
-            const data = await response.json();
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                throw new Error('Reddit API returned an invalid response. Try refreshing in a moment.');
+            }
 
             const posts = [];
             for (const child of data.data.children) {

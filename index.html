@@ -13,7 +13,8 @@
     <meta name="twitter:title" content="🔥 Reddit Music Tracker">
     <meta name="twitter:description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated daily.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
-    <link rel="preconnect" href="https://reddit-proxy.gryangnyc.workers.dev">
+    <link rel="preconnect" href="https://reddit-proxy-nine.vercel.app">
+    <link rel="dns-prefetch" href="https://reddit-proxy-nine.vercel.app">
     <style>
         :root {
             --color-accent: #c2185b;
@@ -442,7 +443,7 @@
         }
 
         async function fetchFromReddit(subreddit) {
-            const url = `https://reddit-proxy.gryangnyc.workers.dev/r/${subreddit}.json?limit=100`;
+            const url = `https://reddit-proxy-nine.vercel.app/api/rss?sub=${subreddit}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Reddit API error (${response.status}). Try refreshing in a moment.`);
             const text = await response.text();
@@ -453,25 +454,8 @@
                 throw new Error('Reddit API returned an invalid response. Try refreshing in a moment.');
             }
 
-            const posts = [];
-            for (const child of data.data.children) {
-                const d = child.data;
-                let thumbnail = (d.thumbnail || '').replace(/&amp;/g, '&');
-                if (!thumbnail || thumbnail === 'self' || thumbnail === 'default') {
-                    const src = d.preview?.images?.[0]?.source;
-                    if (src?.url) thumbnail = src.url.replace(/&amp;/g, '&');
-                }
-                posts.push({
-                    title: d.title,
-                    url: 'https://www.reddit.com' + d.permalink,
-                    created_utc: d.created_utc,
-                    flair: (d.link_flair_text || '').toLowerCase().trim(),
-                    thumbnail
-                });
-            }
-
-            postCache[subreddit] = posts;
-            return posts;
+            postCache[subreddit] = data.posts;
+            return data.posts;
         }
 
         function filterPostsByDateRange(posts, startDate, endDate) {
@@ -480,18 +464,15 @@
             return posts.filter(p => p.created_utc >= startTs && p.created_utc <= endTs);
         }
 
-        function categorizePost(flair, subreddit) {
-            if (!flair) return null;
+        function categorizePost(post, subreddit) {
+            if (post.category) return post.category;
+            const t = post.title.toLowerCase();
 
             if (subreddit === 'kpop') {
-                if (flair.includes('mv') || flair.includes('m/v') || flair.includes('music video')) return 'mv';
-                if (flair.includes('album') || flair.includes('ep') || flair.includes('mini')) return 'album';
-                if (flair.includes('audio')) return 'song';
-                if (flair.includes('teaser')) return 'teaser';
-            } else {
-                if (flair.includes('fresh video')) return 'mv';
-                if (flair.includes('fresh album')) return 'album';
-                if (flair === 'fresh' || flair === '[fresh]') return 'song';
+                if (t.includes('teaser')) return 'teaser';
+                if (t.includes('mv') || t.includes('m/v') || t.includes('music video')) return 'mv';
+                if (t.includes('album') || t.includes(' ep ') || t.includes('mini album')) return 'album';
+                if (t.includes('audio') || t.includes('lyrics video') || t.includes('lyric video')) return 'song';
             }
             return null;
         }
@@ -500,10 +481,10 @@
             const result = { teaser: [], mv: [], album: [], song: [] };
             for (const post of posts) {
                 if (mode === 'teasers') {
-                    if (post.flair.includes('teaser')) result.teaser.push(post);
+                    if (post.title.toLowerCase().includes('teaser')) result.teaser.push(post);
                 } else {
-                    const cat = categorizePost(post.flair, subreddit);
-                    if (cat) result[cat].push(post);
+                    const cat = categorizePost(post, subreddit);
+                    if (cat && cat !== 'teaser') result[cat].push(post);
                 }
             }
             return result;

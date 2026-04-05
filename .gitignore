@@ -1,3 +1,5 @@
 .DS_Store
 .Rhistory
 worker.js
+.vercel
+.env*.local

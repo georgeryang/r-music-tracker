@@ -10,48 +10,50 @@ export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=60");
 
-  if (subreddit === "popheads") {
-    var flairs = [
+  var flairMap = {
+    kpop: [
+      { query: 'flair:"MV"', category: "mv" },
+      { query: 'flair:"Album Discussion"', category: "album" },
+      { query: 'flair:"Audio"', category: "song" },
+      { query: 'flair:"Teaser"', category: "teaser" }
+    ],
+    popheads: [
       { query: 'flair:"fresh video"', category: "mv" },
       { query: 'flair:"fresh album"', category: "album" },
-      { query: 'flair:"fresh"', category: "song" }
-    ];
+      { query: 'flair:"[FRESH]"', category: "song" }
+    ]
+  };
 
-    var results = await Promise.all(flairs.map(function(f) {
-      var searchUrl = "https://old.reddit.com/r/popheads/search.rss?q=" + encodeURIComponent(f.query) + "&sort=new&restrict_sr=on&t=day&limit=100";
-      return fetch(searchUrl, { headers: HEADERS }).then(function(r) {
-        if (!r.ok) return [];
-        return r.text().then(function(xml) {
-          var parsed = parseEntries(xml);
-          for (var i = 0; i < parsed.length; i++) parsed[i].category = f.category;
-          return parsed;
-        });
+  var flairs = flairMap[subreddit];
+  if (!flairs) {
+    return res.status(400).json({ error: "Unknown subreddit" });
+  }
+
+  var results = await Promise.all(flairs.map(function(f) {
+    var searchUrl = "https://old.reddit.com/r/" + subreddit + "/search.rss?q=" + encodeURIComponent(f.query) + "&sort=new&restrict_sr=on&t=day&limit=100";
+    return fetch(searchUrl, { headers: HEADERS }).then(function(r) {
+      if (!r.ok) return [];
+      return r.text().then(function(xml) {
+        var parsed = parseEntries(xml);
+        for (var i = 0; i < parsed.length; i++) parsed[i].category = f.category;
+        return parsed;
       });
-    }));
+    });
+  }));
 
-    var allPosts = [];
-    for (var i = 0; i < results.length; i++) {
-      for (var j = 0; j < results[i].length; j++) {
-        allPosts.push(results[i][j]);
+  var seen = {};
+  var allPosts = [];
+  for (var i = 0; i < results.length; i++) {
+    for (var j = 0; j < results[i].length; j++) {
+      var post = results[i][j];
+      if (!seen[post.url]) {
+        seen[post.url] = true;
+        allPosts.push(post);
       }
     }
-
-    return res.status(200).json({ posts: allPosts });
   }
 
-  var rssUrl = "https://old.reddit.com/r/" + subreddit + "/new.rss?limit=100";
-  var response = await fetch(rssUrl, { headers: HEADERS });
-
-  if (!response.ok) {
-    return res.status(response.status).json({ error: "Reddit returned " + response.status });
-  }
-
-  var xml = await response.text();
-  if (xml.trimStart().startsWith("<html") || xml.trimStart().startsWith("<!DOCTYPE")) {
-    return res.status(502).json({ error: "Reddit returned HTML instead of RSS" });
-  }
-
-  return res.status(200).json({ posts: parseEntries(xml) });
+  return res.status(200).json({ posts: allPosts });
 }
 
 function parseEntries(xml) {

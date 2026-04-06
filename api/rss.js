@@ -3,12 +3,27 @@ const HEADERS = {
   "Accept": "application/atom+xml"
 };
 
-export default async function handler(req, res) {
-  const subreddit = req.query.sub || "kpop";
+const ALLOWED_ORIGINS = [
+  "https://georgeryang.github.io",
+  "http://localhost:3000"
+];
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
+const ALLOWED_SUBS = ["kpop", "popheads"];
+
+export default async function handler(req, res) {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=60");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+
+  const subreddit = req.query.sub || "kpop";
+  if (!ALLOWED_SUBS.includes(subreddit)) {
+    return res.status(400).json({ error: "Unknown subreddit" });
+  }
 
   var flairMap = {
     kpop: [
@@ -25,9 +40,6 @@ export default async function handler(req, res) {
   };
 
   var flairs = flairMap[subreddit];
-  if (!flairs) {
-    return res.status(400).json({ error: "Unknown subreddit" });
-  }
 
   var results = await Promise.all(flairs.map(function(f) {
     var searchUrl = "https://old.reddit.com/r/" + subreddit + "/search.rss?q=" + encodeURIComponent(f.query) + "&sort=new&restrict_sr=on&t=day&limit=100";
@@ -64,7 +76,7 @@ function parseEntries(xml) {
 
     var title = "";
     var titleMatch = entry.match(/<title>([\s\S]*?)<\/title>/);
-    if (titleMatch) title = titleMatch[1].replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;/g, "'");
+    if (titleMatch) title = titleMatch[1].replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;/g, "'").replace(/<[^>]*>/g, "");
 
     var link = "";
     var linkMatch = entry.match(/<link href="([^"]+)"/);

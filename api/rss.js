@@ -5,7 +5,8 @@ const HEADERS = {
 
 const ALLOWED_ORIGINS = [
   "https://georgeryang.github.io",
-  "http://localhost:3000"
+  "http://localhost:3000",
+  "http://localhost:8080"
 ];
 
 const ALLOWED_SUBS = ["kpop", "popheads"];
@@ -17,6 +18,7 @@ export default async function handler(req, res) {
   }
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=60");
+  res.setHeader("Vary", "Origin");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
 
@@ -35,6 +37,7 @@ export default async function handler(req, res) {
     popheads: [
       { query: 'flair:"fresh video"', category: "mv" },
       { query: 'flair:"fresh album"', category: "album" },
+      { query: 'flair:"fresh ep"', category: "album" },
       { query: 'flair:"[FRESH]"', category: "song" }
     ]
   };
@@ -50,7 +53,7 @@ export default async function handler(req, res) {
         for (var i = 0; i < parsed.length; i++) parsed[i].category = f.category;
         return parsed;
       });
-    });
+    }).catch(function() { return []; });
   }));
 
   var seen = {};

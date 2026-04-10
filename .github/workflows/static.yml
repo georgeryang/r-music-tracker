@@ -2,11 +2,10 @@
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
+  schedule:
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -31,6 +30,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Fetch Reddit data
+        run: mkdir -p data && node scripts/fetch-reddit.js
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

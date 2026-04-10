@@ -1,7 +1,11 @@
-const CACHE_NAME = 'music-tracker-v1';
-const API_CACHE_TTL = 300000; // 5 minutes in ms
+const CACHE_NAME = 'music-tracker-v3';
 
-const STATIC_ASSETS = ['/r-music-tracker/', '/r-music-tracker/index.html'];
+const STATIC_ASSETS = [
+  '/r-music-tracker/',
+  '/r-music-tracker/index.html',
+  '/r-music-tracker/data/kpop.json',
+  '/r-music-tracker/data/popheads.json'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -23,32 +27,27 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // API requests: stale-while-revalidate
-  if (url.hostname === 'reddit-proxy-nine.vercel.app') {
+  // Data JSON files: stale-while-revalidate (serve cached, refresh in background)
+  if (url.origin === self.location.origin && url.pathname.match(/\/data\/.*\.json/)) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(request);
+        const cached = await cache.match(request, { ignoreSearch: true });
 
         const fetchPromise = fetch(request).then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            const headers = new Headers(clone.headers);
-            headers.set('sw-cached-at', Date.now().toString());
-            cache.put(request, new Response(clone.body, { status: clone.status, statusText: clone.statusText, headers }));
+            cache.put(request, response.clone());
           }
           return response;
         }).catch(() => cached);
 
-        if (cached) {
-          const cachedAt = parseInt(cached.headers.get('sw-cached-at') || '0');
-          if (Date.now() - cachedAt < API_CACHE_TTL) {
-            return cached;
-          }
-        }
-
-        return fetchPromise;
+        return cached || fetchPromise;
       })
     );
+    return;
+  }
+
+  // Reddit fallback requests: network-only (no caching)
+  if (url.hostname === 'www.reddit.com') {
     return;
   }
 

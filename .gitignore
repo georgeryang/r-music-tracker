@@ -3,3 +3,4 @@
 worker.js
 .vercel
 .env*.local
+data/

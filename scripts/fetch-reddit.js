@@ -17,7 +17,7 @@ const FLAIR_MAP = {
 };
 
 const HEADERS = {
-  'User-Agent': 'web:r-music-tracker:v1.0 (GitHub Actions)'
+  'User-Agent': 'Mozilla/5.0 (compatible; r-music-tracker/1.0; +https://github.com/georgeryang/r-music-tracker)'
 };
 
 async function fetchFlair(subreddit, flair) {

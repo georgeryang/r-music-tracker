@@ -62,7 +62,7 @@ function restoreCollapseState() {
 }
 
 async function fetchData(subreddit) {
-    const r = await fetch(`data/${subreddit}.json`);
+    const r = await fetch(`data/${subreddit}.json?v=${Date.now()}`);
     if (!r.ok) throw new Error('Data not available.');
     const data = await r.json();
     postCache[subreddit] = data.posts;
@@ -132,7 +132,6 @@ function renderCategory(listElement, posts) {
             img.alt = '';
             img.className = 'release-thumbnail';
             img.loading = 'lazy';
-            img.referrerPolicy = 'no-referrer';
             img.onerror = function() { this.replaceWith(createPlaceholder()); };
             a.appendChild(img);
         } else {
@@ -222,6 +221,7 @@ function initializeApp() {
         btnReleases: document.getElementById('btn-releases'),
         btnTeasers: document.getElementById('btn-teasers'),
         lastUpdated: document.getElementById('last-updated'),
+        refreshBtn: document.getElementById('refresh-btn'),
         loading: document.getElementById('loading'),
         error: document.getElementById('error'),
         results: document.getElementById('results'),
@@ -274,6 +274,66 @@ function initializeApp() {
     });
     const other = activeSubreddit === 'kpop' ? 'popheads' : 'kpop';
     fetchData(other).catch(() => {});
+
+    detectLocalServer();
+    setInterval(updateLastUpdated, 30000);
 }
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+async function detectLocalServer() {
+    try {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 2000);
+        const r = await fetch('/api/health', { signal: controller.signal });
+        const data = await r.json();
+        if (data.ok) {
+            dom.refreshBtn.style.display = '';
+            dom.refreshBtn.addEventListener('click', handleRefresh);
+        }
+    } catch {}
+}
+
+async function handleRefresh() {
+    dom.refreshBtn.disabled = true;
+    dom.refreshBtn.classList.add('refreshing');
+    dom.refreshBtn.textContent = 'Refreshing...';
+    dom.error.style.display = 'none';
+
+    try {
+        const r = await fetch('/api/refresh', { method: 'POST' });
+        const data = await r.json();
+
+        if (r.status === 429) {
+            dom.error.textContent = 'Refresh already in progress';
+            dom.error.style.display = 'block';
+            setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
+        } else if (!data.ok) {
+            dom.error.textContent = 'Refresh failed';
+            dom.error.style.display = 'block';
+            setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
+        } else {
+            postCache.kpop = null;
+            postCache.popheads = null;
+            const posts = await fetchData(activeSubreddit);
+            const { start, end } = getDateRange();
+            displayPosts(posts, start, end, currentMode);
+            const other = activeSubreddit === 'kpop' ? 'popheads' : 'kpop';
+            fetchData(other).catch(() => {});
+
+            dom.refreshBtn.disabled = false;
+            dom.refreshBtn.classList.remove('refreshing');
+            dom.refreshBtn.textContent = data.pushed ? 'Pushed!' : 'No changes';
+            setTimeout(() => { dom.refreshBtn.textContent = 'Refresh'; }, 2000);
+            return;
+        }
+    } catch {
+        dom.error.textContent = 'Refresh failed — is the server running?';
+        dom.error.style.display = 'block';
+        setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
+    }
+
+    dom.refreshBtn.disabled = false;
+    dom.refreshBtn.classList.remove('refreshing');
+    dom.refreshBtn.textContent = 'Refresh';
+}
+
+initializeApp();

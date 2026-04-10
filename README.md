@@ -6,7 +6,9 @@ Track new music releases from r/kpop and r/popheads in the past 24 hours.
 
 ## How It Works
 
-A GitHub Actions cron job runs every 30 minutes, fetching posts from Reddit's JSON API filtered by subreddit flair (MV, Album, Audio, Teaser, FRESH, etc.). Results are saved as static JSON files and deployed to GitHub Pages. The frontend loads these pre-built data files — no API calls at page-load time.
+A GitHub Actions cron job runs every hour, fetching posts from Reddit's JSON API filtered by subreddit flair (MV, Album, Audio, Teaser, FRESH, etc.). Results are saved as static JSON files and deployed to GitHub Pages. The frontend loads these pre-built data files — no API calls at page-load time.
+
+**Note:** Reddit may block automated fetches from cloud IPs (including GitHub Actions). When this happens, the script preserves existing committed data instead of overwriting with empty results. To ensure fresh data, run the fetch script manually (see below).
 
 ## Stack
 

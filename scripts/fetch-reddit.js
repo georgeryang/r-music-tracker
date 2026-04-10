@@ -1,5 +1,8 @@
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+
+const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 
 const FLAIR_MAP = {
   kpop: [
@@ -16,20 +19,15 @@ const FLAIR_MAP = {
   ]
 };
 
-const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (compatible; r-music-tracker/1.0; +https://github.com/georgeryang/r-music-tracker)'
-};
-
-async function fetchFlair(subreddit, flair) {
+function fetchFlair(subreddit, flair) {
   const url = 'https://www.reddit.com/r/' + subreddit + '/search.json?q=' +
     encodeURIComponent(flair.query) + '&sort=new&restrict_sr=on&t=day&limit=100&raw_json=1';
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const r = await fetch(url, { headers: HEADERS, signal: controller.signal });
-    clearTimeout(timeout);
-    if (!r.ok) return null;
-    const json = await r.json();
+    const body = execSync(
+      `curl -sS --max-time 8 -H "User-Agent: ${UA}" -H "Accept: application/json" "${url}"`,
+      { encoding: 'utf8', timeout: 10000 }
+    );
+    const json = JSON.parse(body);
     const children = (json && json.data && json.data.children) || [];
     return children.map(c => ({
       title: c.data.title || '',
@@ -38,15 +36,15 @@ async function fetchFlair(subreddit, flair) {
       thumbnail: c.data.thumbnail || '',
       category: flair.category
     }));
-  } catch {
-    clearTimeout(timeout);
+  } catch (err) {
+    console.error('Failed: ' + subreddit + ' ' + flair.category + ' - ' + err.message);
     return null;
   }
 }
 
-async function fetchSubreddit(subreddit) {
+function fetchSubreddit(subreddit) {
   const flairs = FLAIR_MAP[subreddit];
-  const results = await Promise.all(flairs.map(f => fetchFlair(subreddit, f)));
+  const results = flairs.map(f => fetchFlair(subreddit, f));
 
   const failures = results.filter(r => r === null).length;
   if (failures === flairs.length) {
@@ -68,20 +66,13 @@ async function fetchSubreddit(subreddit) {
   return posts;
 }
 
-async function main() {
-  const dataDir = path.join(__dirname, '..', 'data');
-  fs.mkdirSync(dataDir, { recursive: true });
+const dataDir = path.join(__dirname, '..', 'data');
+fs.mkdirSync(dataDir, { recursive: true });
 
-  for (const subreddit of Object.keys(FLAIR_MAP)) {
-    const posts = await fetchSubreddit(subreddit);
-    const data = { fetched_at: Date.now(), posts };
-    const filePath = path.join(dataDir, subreddit + '.json');
-    fs.writeFileSync(filePath, JSON.stringify(data));
-    console.log('Wrote ' + filePath + ' (' + posts.length + ' posts)');
-  }
+for (const subreddit of Object.keys(FLAIR_MAP)) {
+  const posts = fetchSubreddit(subreddit);
+  const data = { fetched_at: Date.now(), posts };
+  const filePath = path.join(dataDir, subreddit + '.json');
+  fs.writeFileSync(filePath, JSON.stringify(data));
+  console.log('Wrote ' + filePath + ' (' + posts.length + ' posts)');
 }
-
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});

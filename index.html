@@ -837,9 +837,11 @@
 
         document.addEventListener('DOMContentLoaded', initializeApp);
 
-        // Register service worker for caching
+        // Unregister any old service workers
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/r-music-tracker/sw.js').catch(() => {});
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => r.unregister());
+            });
         }
     </script>
 </body>

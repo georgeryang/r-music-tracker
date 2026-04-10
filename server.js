@@ -125,11 +125,25 @@ const server = http.createServer(async (req, res) => {
     serveStatic(req, res);
 });
 
+function getLastFetchedAt() {
+    try {
+        const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/kpop.json'), 'utf8'));
+        return data.fetched_at || 0;
+    } catch { return 0; }
+}
+
 server.once('listening', () => {
     console.log(`Reddit Music Tracker running at http://localhost:${port}`);
-    console.log('Auto-refresh: 6 hours after last refresh (manual or automatic)\n');
 
-    updateCycle();
+    const age = Date.now() - getLastFetchedAt();
+    if (age >= INTERVAL_MS) {
+        console.log('Data is over 6 hours old — fetching now\n');
+        updateCycle();
+    } else {
+        const remaining = INTERVAL_MS - age;
+        console.log(`Data is fresh — next auto-refresh in ${Math.round(remaining / 60000)}m\n`);
+        autoRefreshTimer = setTimeout(updateCycle, remaining);
+    }
 });
 
 server.on('error', (err) => {

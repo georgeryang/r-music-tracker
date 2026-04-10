@@ -593,10 +593,10 @@
 
         async function fetchData(subreddit) {
             try {
-                return await fetchStaticData(subreddit);
-            } catch {
-                return await fetchFromRedditDirect(subreddit);
-            }
+                const posts = await fetchStaticData(subreddit);
+                if (posts.length > 0) return posts;
+            } catch {}
+            return await fetchFromRedditDirect(subreddit);
         }
 
         function filterPostsByDateRange(posts, startDate, endDate) {

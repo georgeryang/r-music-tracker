@@ -4,16 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reddit Music Tracker</title>
-    <meta name="description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated daily.">
+    <meta name="description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated hourly.">
     <meta property="og:title" content="🔥 Reddit Music Tracker">
-    <meta property="og:description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated daily.">
+    <meta property="og:description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated hourly.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://georgeryang.github.io/r-music-tracker/">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="🔥 Reddit Music Tracker">
-    <meta name="twitter:description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated daily.">
+    <meta name="twitter:description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated hourly.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src * data:; connect-src 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src https://*.redd.it data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="referrer" content="no-referrer">
+    <link rel="preconnect" href="https://preview.redd.it" crossorigin>
+    <link rel="preconnect" href="https://external-preview.redd.it" crossorigin>
     <style>
         :root {
             --color-accent: #c2185b;
@@ -123,12 +127,62 @@
             color: var(--color-btn-active-text);
         }
 
-        .last-updated {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--color-text-muted);
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
             margin-bottom: 0.75rem;
             min-height: 1.2em;
+        }
+
+        .last-updated {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .refresh-btn {
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            border: 1.5px solid var(--color-accent);
+            background: transparent;
+            color: var(--color-accent);
+            cursor: pointer;
+            border-radius: 1rem;
+            font-weight: 500;
+            transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: var(--color-accent);
+            color: var(--color-btn-active-text);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .refresh-btn:disabled:hover {
+            background: transparent;
+            color: var(--color-accent);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .refresh-btn.refreshing::before {
+            content: '';
+            display: inline-block;
+            width: 0.65rem;
+            height: 0.65rem;
+            border: 1.5px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 0.3rem;
+            vertical-align: -0.08rem;
         }
 
         .controls {
@@ -362,12 +416,34 @@
                 font-size: 1.5rem;
             }
 
+            .subtitle {
+                font-size: 0.875rem;
+            }
+
             .subreddit-selector {
                 justify-content: center;
             }
 
+            .subreddit-btn {
+                padding: 0.625rem 1.25rem;
+                min-height: 2.5rem;
+            }
+
             .tab-btn {
                 flex: 1;
+            }
+
+            .category {
+                margin-bottom: 1.5rem;
+            }
+
+            .category-header {
+                padding-bottom: 0.5rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .release-item {
+                padding: 0.5rem 0.625rem;
             }
 
             .release-thumbnail {
@@ -389,7 +465,11 @@
             <button class="subreddit-btn" data-sub="popheads">r/popheads</button>
         </div>
 
-        <div id="last-updated" class="last-updated"></div>
+        <div class="status-bar">
+            <span id="last-updated" class="last-updated"></span>
+            <button id="refresh-btn" class="refresh-btn" style="display:none">Refresh</button>
+            <button id="publish-btn" class="refresh-btn" style="display:none" disabled>Publish to Web</button>
+        </div>
 
         <div class="controls" id="controls">
             <button id="btn-releases" class="tab-btn active">New Releases</button>
@@ -442,6 +522,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js" defer></script>
 </body>
 </html>

@@ -32,7 +32,13 @@ function scheduleAutoRefresh() {
     autoRefreshTimer = setTimeout(updateCycle, INTERVAL_MS);
 }
 
-function updateCycle() {
+function checkHasChanges() {
+    return new Promise((resolve) => {
+        exec('git diff --quiet data/', { cwd: ROOT }, (err) => resolve(!!err));
+    });
+}
+
+function fetchCycle() {
     return new Promise((resolve) => {
         if (refreshInProgress) return resolve({ ok: false, status: 429, message: 'Refresh already in progress' });
         refreshInProgress = true;
@@ -52,39 +58,51 @@ function updateCycle() {
                 return resolve({ ok: false, status: 500, message: output.join('\n') });
             }
 
-            log(`[${new Date().toLocaleTimeString()}] Checking for changes...`);
+            scheduleAutoRefresh();
 
-            exec('git diff --quiet data/', { cwd: ROOT }, (diffErr) => {
-                if (!diffErr) {
-                    log(`[${new Date().toLocaleTimeString()}] No changes to data files`);
-                    refreshInProgress = false;
-                    scheduleAutoRefresh();
-                    return resolve({ ok: true, message: output.join('\n'), pushed: false });
-                }
-
-                const timestamp = new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '');
-                const commitMsg = `Update data ${timestamp}`;
-                const gitCmd = `git add data/ && git commit -m "${commitMsg}" && git push`;
-
-                log(`[${new Date().toLocaleTimeString()}] Committing and pushing...`);
-
-                exec(gitCmd, { cwd: ROOT, timeout: 30000 }, (gitErr, gitStdout, gitStderr) => {
-                    if (gitStdout) output.push(gitStdout.trim());
-                    if (gitStderr) output.push(gitStderr.trim());
-                    refreshInProgress = false;
-
-                    if (gitErr) {
-                        log(`[${new Date().toLocaleTimeString()}] Git push failed: ${gitErr.message}`);
-                        return resolve({ ok: false, status: 500, message: output.join('\n') });
-                    }
-
-                    log(`[${new Date().toLocaleTimeString()}] Pushed to GitHub`);
-                    scheduleAutoRefresh();
-                    resolve({ ok: true, message: output.join('\n'), pushed: true });
-                });
+            checkHasChanges().then((hasChanges) => {
+                log(`[${new Date().toLocaleTimeString()}] ${hasChanges ? 'New data available' : 'No changes'}`);
+                refreshInProgress = false;
+                resolve({ ok: true, message: output.join('\n'), hasChanges });
             });
         });
     });
+}
+
+function publishCycle() {
+    return new Promise((resolve) => {
+        checkHasChanges().then((hasChanges) => {
+            if (!hasChanges) return resolve({ ok: true, pushed: false, message: 'Nothing to publish' });
+
+            const output = [];
+            const log = (msg) => { console.log(msg); output.push(msg); };
+
+            const timestamp = new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '');
+            const commitMsg = `Update data ${timestamp}`;
+            const gitCmd = `git add data/ && git commit -m "${commitMsg}" && git push`;
+
+            log(`[${new Date().toLocaleTimeString()}] Committing and pushing...`);
+
+            exec(gitCmd, { cwd: ROOT, timeout: 30000 }, (gitErr, gitStdout, gitStderr) => {
+                if (gitStdout) output.push(gitStdout.trim());
+                if (gitStderr) output.push(gitStderr.trim());
+
+                if (gitErr) {
+                    log(`[${new Date().toLocaleTimeString()}] Git push failed: ${gitErr.message}`);
+                    return resolve({ ok: false, status: 500, message: output.join('\n') });
+                }
+
+                log(`[${new Date().toLocaleTimeString()}] Pushed to GitHub`);
+                resolve({ ok: true, pushed: true, message: output.join('\n') });
+            });
+        });
+    });
+}
+
+async function updateCycle() {
+    const fetchResult = await fetchCycle();
+    if (!fetchResult.ok || !fetchResult.hasChanges) return fetchResult;
+    return publishCycle();
 }
 
 function serveStatic(req, res) {
@@ -111,12 +129,20 @@ function serveStatic(req, res) {
 
 const server = http.createServer(async (req, res) => {
     if (req.url === '/api/health' && req.method === 'GET') {
+        const hasChanges = await checkHasChanges();
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: true }));
+        return res.end(JSON.stringify({ ok: true, hasChanges }));
     }
 
     if (req.url === '/api/refresh' && req.method === 'POST') {
-        const result = await updateCycle();
+        const result = await fetchCycle();
+        const status = result.status || 200;
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+    }
+
+    if (req.url === '/api/publish' && req.method === 'POST') {
+        const result = await publishCycle();
         const status = result.status || 200;
         res.writeHead(status, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify(result));

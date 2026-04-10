@@ -222,6 +222,7 @@ function initializeApp() {
         btnTeasers: document.getElementById('btn-teasers'),
         lastUpdated: document.getElementById('last-updated'),
         refreshBtn: document.getElementById('refresh-btn'),
+        publishBtn: document.getElementById('publish-btn'),
         loading: document.getElementById('loading'),
         error: document.getElementById('error'),
         results: document.getElementById('results'),
@@ -279,6 +280,10 @@ function initializeApp() {
     setInterval(updateLastUpdated, 30000);
 }
 
+function setPublishEnabled(enabled) {
+    dom.publishBtn.disabled = !enabled;
+}
+
 async function detectLocalServer() {
     try {
         const controller = new AbortController();
@@ -287,7 +292,10 @@ async function detectLocalServer() {
         const data = await r.json();
         if (data.ok) {
             dom.refreshBtn.style.display = '';
+            dom.publishBtn.style.display = '';
             dom.refreshBtn.addEventListener('click', handleRefresh);
+            dom.publishBtn.addEventListener('click', handlePublish);
+            setPublishEnabled(data.hasChanges);
         }
     } catch {}
 }
@@ -319,9 +327,10 @@ async function handleRefresh() {
             const other = activeSubreddit === 'kpop' ? 'popheads' : 'kpop';
             fetchData(other).catch(() => {});
 
+            setPublishEnabled(data.hasChanges);
             dom.refreshBtn.disabled = false;
             dom.refreshBtn.classList.remove('refreshing');
-            dom.refreshBtn.textContent = data.pushed ? 'Pushed!' : 'No changes';
+            dom.refreshBtn.textContent = data.hasChanges ? 'Fetched!' : 'No changes';
             setTimeout(() => { dom.refreshBtn.textContent = 'Refresh'; }, 2000);
             return;
         }
@@ -334,6 +343,39 @@ async function handleRefresh() {
     dom.refreshBtn.disabled = false;
     dom.refreshBtn.classList.remove('refreshing');
     dom.refreshBtn.textContent = 'Refresh';
+}
+
+async function handlePublish() {
+    dom.publishBtn.disabled = true;
+    dom.publishBtn.classList.add('refreshing');
+    dom.publishBtn.textContent = 'Publishing...';
+    dom.error.style.display = 'none';
+
+    try {
+        const r = await fetch('/api/publish', { method: 'POST' });
+        const data = await r.json();
+
+        if (!data.ok) {
+            dom.error.textContent = 'Publish failed';
+            dom.error.style.display = 'block';
+            setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
+            dom.publishBtn.disabled = false;
+        } else if (data.pushed) {
+            dom.publishBtn.classList.remove('refreshing');
+            dom.publishBtn.textContent = 'Published!';
+            setTimeout(() => { dom.publishBtn.textContent = 'Publish to Web'; }, 2000);
+        } else {
+            dom.publishBtn.textContent = 'Nothing to publish';
+            setTimeout(() => { dom.publishBtn.textContent = 'Publish to Web'; }, 2000);
+        }
+    } catch {
+        dom.error.textContent = 'Publish failed — is the server running?';
+        dom.error.style.display = 'block';
+        setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
+        dom.publishBtn.disabled = false;
+    }
+
+    dom.publishBtn.classList.remove('refreshing');
 }
 
 initializeApp();

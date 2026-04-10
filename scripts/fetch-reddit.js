@@ -79,8 +79,12 @@ fs.mkdirSync(dataDir, { recursive: true });
 
 for (const subreddit of Object.keys(FLAIR_MAP)) {
   const posts = fetchSubreddit(subreddit);
-  const data = { fetched_at: Date.now(), posts };
   const filePath = path.join(dataDir, subreddit + '.json');
-  fs.writeFileSync(filePath, JSON.stringify(data));
-  console.log('Wrote ' + filePath + ' (' + posts.length + ' posts)');
+  if (posts.length > 0) {
+    const data = { fetched_at: Date.now(), posts };
+    fs.writeFileSync(filePath, JSON.stringify(data));
+    console.log('Wrote ' + filePath + ' (' + posts.length + ' posts)');
+  } else {
+    console.log('Skipped ' + filePath + ' (0 posts, keeping existing)');
+  }
 }

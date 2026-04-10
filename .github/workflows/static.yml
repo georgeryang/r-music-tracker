@@ -30,6 +30,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Random delay
+        if: github.event_name == 'schedule'
+        run: sleep $((RANDOM % 3000))
       - name: Fetch Reddit data
         run: mkdir -p data && node scripts/fetch-reddit.js
       - name: Setup Pages

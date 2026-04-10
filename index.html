@@ -13,7 +13,7 @@
     <meta name="twitter:title" content="🔥 Reddit Music Tracker">
     <meta name="twitter:description" content="Track the latest music releases, MVs, and teasers from r/kpop and r/popheads — updated daily.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src * data:; connect-src 'self' https://www.reddit.com; worker-src 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src * data:; connect-src 'self'">
     <style>
         :root {
             --color-accent: #c2185b;
@@ -535,68 +535,14 @@
             }
         }
 
-        async function fetchStaticData(subreddit) {
+        async function fetchData(subreddit) {
             const url = `data/${subreddit}.json?t=${Date.now()}`;
             const r = await fetch(url);
-            if (!r.ok) throw new Error('static-miss');
+            if (!r.ok) throw new Error('Data not available. Try refreshing.');
             const data = await r.json();
             postCache[subreddit] = data.posts;
             lastFetchTime[subreddit] = data.fetched_at;
             return data.posts;
-        }
-
-        const FLAIR_MAP = {
-            kpop: [
-                { query: 'flair:"MV"', category: 'mv' },
-                { query: 'flair:"Album Discussion"', category: 'album' },
-                { query: 'flair:"Audio"', category: 'song' },
-                { query: 'flair:"Teaser"', category: 'teaser' }
-            ],
-            popheads: [
-                { query: 'flair:"fresh video"', category: 'mv' },
-                { query: 'flair:"fresh album"', category: 'album' },
-                { query: 'flair:"fresh ep"', category: 'album' },
-                { query: 'flair:"[FRESH]"', category: 'song' }
-            ]
-        };
-
-        async function fetchFromRedditDirect(subreddit) {
-            const flairs = FLAIR_MAP[subreddit];
-            let failures = 0;
-            const results = await Promise.all(flairs.map(async (f) => {
-                const url = `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(f.query)}&sort=new&restrict_sr=on&t=day&limit=100&raw_json=1`;
-                try {
-                    const r = await fetch(url);
-                    if (!r.ok) { failures++; return []; }
-                    const json = await r.json();
-                    return (json?.data?.children || []).map(c => ({
-                        title: c.data?.title || '',
-                        url: 'https://www.reddit.com' + (c.data?.permalink || ''),
-                        created_utc: c.data?.created_utc || 0,
-                        thumbnail: c.data?.thumbnail || '',
-                        category: f.category
-                    }));
-                } catch { failures++; return []; }
-            }));
-            if (failures === flairs.length) throw new Error('Reddit is not responding. Try again in a moment.');
-            const seen = new Set();
-            const posts = [];
-            for (const group of results) {
-                for (const post of group) {
-                    if (!seen.has(post.url)) { seen.add(post.url); posts.push(post); }
-                }
-            }
-            postCache[subreddit] = posts;
-            lastFetchTime[subreddit] = Date.now();
-            return posts;
-        }
-
-        async function fetchData(subreddit) {
-            try {
-                const posts = await fetchStaticData(subreddit);
-                if (posts.length > 0) return posts;
-            } catch {}
-            return await fetchFromRedditDirect(subreddit);
         }
 
         function filterPostsByDateRange(posts, startDate, endDate) {

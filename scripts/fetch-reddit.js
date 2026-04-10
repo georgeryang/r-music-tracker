@@ -23,12 +23,20 @@ function fetchFlair(subreddit, flair) {
   const url = 'https://www.reddit.com/r/' + subreddit + '/search.json?q=' +
     encodeURIComponent(flair.query) + '&sort=new&restrict_sr=on&t=day&limit=100&raw_json=1';
   try {
-    const body = execSync(
-      `curl -sS --max-time 8 -H "User-Agent: ${UA}" -H "Accept: application/json" "${url}"`,
+    const raw = execSync(
+      `curl -sS -w "\\nHTTP_STATUS:%{http_code}" --max-time 8 -H "User-Agent: ${UA}" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7" -H "Accept-Language: en-US,en;q=0.5" "${url}"`,
       { encoding: 'utf8', timeout: 10000 }
     );
+    const statusMatch = raw.match(/HTTP_STATUS:(\d+)/);
+    const status = statusMatch ? statusMatch[1] : 'unknown';
+    const body = raw.replace(/\nHTTP_STATUS:\d+$/, '');
+    if (status !== '200') {
+      console.error('HTTP ' + status + ' for ' + subreddit + '/' + flair.category + ': ' + body.substring(0, 200));
+      return null;
+    }
     const json = JSON.parse(body);
     const children = (json && json.data && json.data.children) || [];
+    console.log('OK: ' + subreddit + '/' + flair.category + ' — ' + children.length + ' posts');
     return children.map(c => ({
       title: c.data.title || '',
       url: 'https://www.reddit.com' + (c.data.permalink || ''),
@@ -37,7 +45,7 @@ function fetchFlair(subreddit, flair) {
       category: flair.category
     }));
   } catch (err) {
-    console.error('Failed: ' + subreddit + ' ' + flair.category + ' - ' + err.message);
+    console.error('Failed: ' + subreddit + '/' + flair.category + ' - ' + (err.stderr || err.message).substring(0, 300));
     return null;
   }
 }

@@ -296,8 +296,52 @@ async function detectLocalServer() {
             dom.refreshBtn.addEventListener('click', handleRefresh);
             dom.publishBtn.addEventListener('click', handlePublish);
             setPublishEnabled(data.hasChanges);
+
+            // If server is auto-refreshing on startup, wait then reload data
+            const SIX_HOURS = 6 * 60 * 60 * 1000;
+            const stale = lastFetchTime[activeSubreddit] && (Date.now() - lastFetchTime[activeSubreddit]) >= SIX_HOURS;
+            if (data.refreshing) {
+                dom.refreshBtn.disabled = true;
+                dom.refreshBtn.classList.add('refreshing');
+                dom.refreshBtn.textContent = 'Refreshing...';
+                await waitForRefresh();
+            } else if (stale) {
+                // Server refresh already completed — reload data from disk
+                await reloadData();
+            }
         }
     } catch {}
+}
+
+async function reloadData() {
+    postCache.kpop = null;
+    postCache.popheads = null;
+    const posts = await fetchData(activeSubreddit);
+    const { start, end } = getDateRange();
+    displayPosts(posts, start, end, currentMode);
+    const other = activeSubreddit === 'kpop' ? 'popheads' : 'kpop';
+    fetchData(other).catch(() => {});
+}
+
+async function waitForRefresh() {
+    for (let i = 0; i < 30; i++) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            const r = await fetch('/api/health');
+            const data = await r.json();
+            if (!data.refreshing) {
+                await reloadData();
+                setPublishEnabled(data.hasChanges);
+                dom.refreshBtn.disabled = false;
+                dom.refreshBtn.classList.remove('refreshing');
+                dom.refreshBtn.textContent = 'Refresh';
+                return;
+            }
+        } catch { break; }
+    }
+    dom.refreshBtn.disabled = false;
+    dom.refreshBtn.classList.remove('refreshing');
+    dom.refreshBtn.textContent = 'Refresh';
 }
 
 async function handleRefresh() {

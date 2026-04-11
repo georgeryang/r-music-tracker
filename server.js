@@ -131,7 +131,7 @@ const server = http.createServer(async (req, res) => {
     if (req.url === '/api/health' && req.method === 'GET') {
         const hasChanges = await checkHasChanges();
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: true, hasChanges }));
+        return res.end(JSON.stringify({ ok: true, hasChanges, refreshing: refreshInProgress }));
     }
 
     if (req.url === '/api/refresh' && req.method === 'POST') {

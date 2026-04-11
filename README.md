@@ -4,25 +4,54 @@ Track new music releases from r/kpop and r/popheads in the past 24 hours.
 
 **Live site:** [georgeryang.github.io/r-music-tracker](https://georgeryang.github.io/r-music-tracker/)
 
+## Quick Start
+
+**Option A — Double-click** (easiest):
+- macOS: double-click `start.command`
+- Windows: double-click `start.bat`
+
+The browser opens automatically. Requires [Node.js](https://nodejs.org) and curl.
+
+**Option B — Terminal:**
+```bash
+git clone https://github.com/georgeryang/r-music-tracker.git
+cd r-music-tracker
+npm start
+```
+
+Open http://localhost:3000.
+
 ## How It Works
 
-A GitHub Actions cron job runs every hour, fetching posts from Reddit's JSON API filtered by subreddit flair (MV, Album, Audio, Teaser, FRESH, etc.). Results are saved as static JSON files and deployed to GitHub Pages. The frontend loads these pre-built data files — no API calls at page-load time.
+A local Node.js server serves the tracker page and auto-refreshes data from Reddit every 6 hours, committing and pushing to GitHub (which triggers a GitHub Pages deploy). Click the **Refresh** button in the UI to fetch + push immediately.
 
-**Note:** Reddit may block automated fetches from cloud IPs (including GitHub Actions). When this happens, the script preserves existing committed data instead of overwriting with empty results. To ensure fresh data, run the fetch script manually (see below).
+Data is fetched locally because Reddit blocks automated requests from cloud platforms.
+
+### Data refresh triggers
+
+1. **Every 6 hours** — automatic fetch + commit + push
+2. **Manual** — click Refresh in the UI
 
 ## Stack
 
-- **Frontend:** Single `index.html` with separate `app.js` — hosted on GitHub Pages, no build step or dependencies
-- **Data pipeline:** `scripts/fetch-reddit.js` — Node.js script (zero deps) that fetches Reddit data via `curl` and writes `data/kpop.json` + `data/popheads.json`
-- **Deployment:** GitHub Actions (`.github/workflows/static.yml`) — runs on push, on schedule, and on manual trigger
+- **Frontend:** Single `index.html` with separate `app.js` — no build step, no dependencies
+- **Server:** `server.js` — zero-dependency Node.js server (built-in modules only)
+- **Data pipeline:** `scripts/fetch-reddit.js` — fetches Reddit data via `curl`
+- **Deployment:** GitHub Actions deploys to GitHub Pages on push
 
-## Updating Data
+## Options
 
-Data refreshes automatically via the GitHub Actions cron. To update manually:
-
+```bash
+npm start                       # Default: port 3000, auto-refresh every 6 hours
+npm start -- --port 8080        # Custom port
+npm start -- --interval 60      # Auto-refresh every 60 minutes
+npm start -- --interval 0       # Disable auto-refresh (manual only)
 ```
-node scripts/fetch-reddit.js
-git add data/ && git commit -m "Update data" && git push
+
+## Manual fetch (no server)
+
+```bash
+npm run fetch                   # Just fetch data to data/*.json
 ```
 
 ## License

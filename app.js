@@ -1,3 +1,10 @@
+// Unregister stale service workers from previous deployments
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister());
+    });
+}
+
 // State
 let activeSubreddit = 'kpop';
 let currentMode = 'releases';

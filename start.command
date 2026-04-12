@@ -24,13 +24,6 @@ fi
 echo "Starting Reddit Music Tracker..."
 echo ""
 
-# Start server, capture output, and open browser once we see the URL
-node server.js 2>&1 | while IFS= read -r line; do
-    echo "$line"
-    if [[ "$line" == *"http://localhost:"* ]]; then
-        url=$(echo "$line" | grep -o 'http://localhost:[0-9]*')
-        open "$url" &
-    fi
-done
+node server.js --open
 
 read -p "Press Enter to close..."

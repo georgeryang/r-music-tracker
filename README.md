@@ -16,25 +16,20 @@ The browser opens automatically. Requires [Node.js](https://nodejs.org) and curl
 ```bash
 git clone https://github.com/georgeryang/r-music-tracker.git
 cd r-music-tracker
-npm start
+npm start -- --open
 ```
-
-Open http://localhost:3000.
 
 ## How It Works
 
-A local Node.js server serves the tracker page and auto-refreshes data from Reddit every 6 hours, committing and pushing to GitHub (which triggers a GitHub Pages deploy). Click the **Refresh** button in the UI to fetch + push immediately.
+A local Node.js server fetches data from Reddit every 6 hours using `curl` (Reddit blocks automated requests from cloud platforms). When new data is found, it commits and pushes to GitHub, which triggers a GitHub Pages deploy.
 
-Data is fetched locally because Reddit blocks automated requests from cloud platforms.
-
-### Data refresh triggers
-
-1. **Every 6 hours** — automatic fetch + commit + push
-2. **Manual** — click Refresh in the UI
+The UI has two server-only buttons (hidden on the live site):
+- **Refresh** — fetch new data from Reddit
+- **Publish to Web** — commit and push data to GitHub
 
 ## Stack
 
-- **Frontend:** Single `index.html` with separate `app.js` — no build step, no dependencies
+- **Frontend:** Single `index.html` + `app.js` — no build step, no dependencies
 - **Server:** `server.js` — zero-dependency Node.js server (built-in modules only)
 - **Data pipeline:** `scripts/fetch-reddit.js` — fetches Reddit data via `curl`
 - **Deployment:** GitHub Actions deploys to GitHub Pages on push
@@ -42,10 +37,9 @@ Data is fetched locally because Reddit blocks automated requests from cloud plat
 ## Options
 
 ```bash
-npm start                       # Default: port 3000, auto-refresh every 6 hours
+npm start                       # Default: port 3000
 npm start -- --port 8080        # Custom port
-npm start -- --interval 60      # Auto-refresh every 60 minutes
-npm start -- --interval 0       # Disable auto-refresh (manual only)
+npm start -- --open             # Open browser automatically
 ```
 
 ## Manual fetch (no server)

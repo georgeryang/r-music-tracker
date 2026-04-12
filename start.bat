@@ -29,10 +29,6 @@ if %errorlevel% neq 0 (
 echo Starting Reddit Music Tracker...
 echo.
 
-:: Start server in background, wait briefly, then open browser
-:: Server auto-finds an open port starting from 3000
-start /b cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:3000"
-
-node server.js
+node server.js --open
 
 pause

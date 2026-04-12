@@ -159,7 +159,14 @@ function getLastFetchedAt() {
 }
 
 server.once('listening', () => {
-    console.log(`Reddit Music Tracker running at http://localhost:${port}`);
+    const url = `http://localhost:${port}`;
+    console.log(`Reddit Music Tracker running at ${url}`);
+
+    if (process.argv.includes('--open')) {
+        const open = process.platform === 'win32' ? `start ${url}` :
+            process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
+        exec(open);
+    }
 
     const age = Date.now() - getLastFetchedAt();
     if (age >= INTERVAL_MS) {

@@ -23,13 +23,21 @@ function getArg(name, fallback) {
 const startPort = Number(process.env.PORT) || getArg('--port', 3000);
 let port = startPort;
 
-const INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 let refreshInProgress = false;
-let autoRefreshTimer = null;
 
-function scheduleAutoRefresh() {
-    clearTimeout(autoRefreshTimer);
-    autoRefreshTimer = setTimeout(updateCycle, INTERVAL_MS);
+function scheduleDailyRefresh() {
+    const now = new Date();
+    const target = new Date(now);
+    target.setUTCHours(9, 30, 0, 0); // 6:30 PM KST = 09:30 UTC
+    if (target <= now) target.setUTCDate(target.getUTCDate() + 1);
+    const ms = target - now;
+    const h = Math.floor(ms / 3600000);
+    const m = Math.round((ms % 3600000) / 60000);
+    console.log(`Next scheduled refresh at 6:30 PM KST in ${h}h ${m}m`);
+    setTimeout(() => {
+        updateCycle();
+        scheduleDailyRefresh();
+    }, ms);
 }
 
 function checkHasChanges() {
@@ -57,8 +65,6 @@ function fetchCycle() {
                 refreshInProgress = false;
                 return resolve({ ok: false, status: 500, message: output.join('\n') });
             }
-
-            scheduleAutoRefresh();
 
             checkHasChanges().then((hasChanges) => {
                 log(`[${new Date().toLocaleTimeString()}] ${hasChanges ? 'New data available' : 'No changes'}`);
@@ -151,13 +157,6 @@ const server = http.createServer(async (req, res) => {
     serveStatic(req, res);
 });
 
-function getLastFetchedAt() {
-    try {
-        const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/kpop.json'), 'utf8'));
-        return data.fetched_at || 0;
-    } catch { return 0; }
-}
-
 server.once('listening', () => {
     const url = `http://localhost:${port}`;
     console.log(`Reddit Music Tracker running at ${url}`);
@@ -168,15 +167,9 @@ server.once('listening', () => {
         exec(open);
     }
 
-    const age = Date.now() - getLastFetchedAt();
-    if (age >= INTERVAL_MS) {
-        console.log('Data is over 6 hours old — fetching now\n');
-        updateCycle();
-    } else {
-        const remaining = INTERVAL_MS - age;
-        console.log(`Data is fresh — next auto-refresh in ${Math.round(remaining / 60000)}m\n`);
-        autoRefreshTimer = setTimeout(updateCycle, remaining);
-    }
+    console.log('Fetching on startup...\n');
+    updateCycle();
+    scheduleDailyRefresh();
 });
 
 server.on('error', (err) => {

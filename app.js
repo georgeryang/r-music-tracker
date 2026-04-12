@@ -116,7 +116,7 @@ function createPlaceholder() {
 
 function renderCategory(listElement, posts) {
     if (posts.length === 0) {
-        listElement.innerHTML = '<li class="empty-message">Quiet day so far</li>';
+        listElement.innerHTML = '<li class="empty-message">Nothing yet — check back later!</li>';
         return;
     }
 
@@ -172,12 +172,12 @@ function renderCategory(listElement, posts) {
 function formatRelativeTime(timestamp) {
     if (!timestamp) return '';
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    if (seconds < 10) return 'Last fetched just now';
-    if (seconds < 60) return `Last fetched ${seconds}s ago`;
+    if (seconds < 10) return 'Fresh off Reddit';
+    if (seconds < 60) return `Updated ${seconds}s ago`;
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `Last fetched ${minutes}m ago`;
+    if (minutes < 60) return `Updated ${minutes}m ago`;
     const hours = Math.floor(minutes / 60);
-    return `Last fetched ${hours}h ago`;
+    return `Updated ${hours}h ago`;
 }
 
 function updateLastUpdated() {
@@ -304,17 +304,12 @@ async function detectLocalServer() {
             dom.publishBtn.addEventListener('click', handlePublish);
             setPublishEnabled(data.hasChanges);
 
-            // If server is auto-refreshing on startup, wait then reload data
-            const SIX_HOURS = 6 * 60 * 60 * 1000;
-            const stale = lastFetchTime[activeSubreddit] && (Date.now() - lastFetchTime[activeSubreddit]) >= SIX_HOURS;
+            // If server is refreshing on startup, wait then reload data
             if (data.refreshing) {
                 dom.refreshBtn.disabled = true;
                 dom.refreshBtn.classList.add('refreshing');
-                dom.refreshBtn.textContent = 'Refreshing...';
+                dom.refreshBtn.textContent = 'Checking Reddit...';
                 await waitForRefresh();
-            } else if (stale) {
-                // Server refresh already completed — reload data from disk
-                await reloadData();
             }
         }
     } catch {}
@@ -354,7 +349,7 @@ async function waitForRefresh() {
 async function handleRefresh() {
     dom.refreshBtn.disabled = true;
     dom.refreshBtn.classList.add('refreshing');
-    dom.refreshBtn.textContent = 'Refreshing...';
+    dom.refreshBtn.textContent = 'Checking Reddit...';
     dom.error.style.display = 'none';
 
     try {
@@ -362,11 +357,11 @@ async function handleRefresh() {
         const data = await r.json();
 
         if (r.status === 429) {
-            dom.error.textContent = 'Refresh already in progress';
+            dom.error.textContent = 'Hold on — already refreshing!';
             dom.error.style.display = 'block';
             setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
         } else if (!data.ok) {
-            dom.error.textContent = 'Refresh failed';
+            dom.error.textContent = 'Something went wrong — try again?';
             dom.error.style.display = 'block';
             setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
         } else {
@@ -381,12 +376,12 @@ async function handleRefresh() {
             setPublishEnabled(data.hasChanges);
             dom.refreshBtn.disabled = false;
             dom.refreshBtn.classList.remove('refreshing');
-            dom.refreshBtn.textContent = data.hasChanges ? 'Fetched!' : 'No changes';
+            dom.refreshBtn.textContent = data.hasChanges ? 'Got new drops!' : 'All caught up';
             setTimeout(() => { dom.refreshBtn.textContent = 'Refresh'; }, 2000);
             return;
         }
     } catch {
-        dom.error.textContent = 'Refresh failed — is the server running?';
+        dom.error.textContent = 'Can\'t reach the server — is it running?';
         dom.error.style.display = 'block';
         setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
     }
@@ -399,7 +394,7 @@ async function handleRefresh() {
 async function handlePublish() {
     dom.publishBtn.disabled = true;
     dom.publishBtn.classList.add('refreshing');
-    dom.publishBtn.textContent = 'Publishing...';
+    dom.publishBtn.textContent = 'Pushing...';
     dom.error.style.display = 'none';
 
     try {
@@ -407,20 +402,20 @@ async function handlePublish() {
         const data = await r.json();
 
         if (!data.ok) {
-            dom.error.textContent = 'Publish failed';
+            dom.error.textContent = 'Publish failed — try again?';
             dom.error.style.display = 'block';
             setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
             dom.publishBtn.disabled = false;
         } else if (data.pushed) {
             dom.publishBtn.classList.remove('refreshing');
-            dom.publishBtn.textContent = 'Published!';
+            dom.publishBtn.textContent = 'Live!';
             setTimeout(() => { dom.publishBtn.textContent = 'Publish to Web'; }, 2000);
         } else {
-            dom.publishBtn.textContent = 'Nothing to publish';
+            dom.publishBtn.textContent = 'Already up to date';
             setTimeout(() => { dom.publishBtn.textContent = 'Publish to Web'; }, 2000);
         }
     } catch {
-        dom.error.textContent = 'Publish failed — is the server running?';
+        dom.error.textContent = 'Can\'t reach the server — is it running?';
         dom.error.style.display = 'block';
         setTimeout(() => { dom.error.style.display = 'none'; }, 3000);
         dom.publishBtn.disabled = false;

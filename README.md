@@ -21,7 +21,7 @@ npm start -- --open
 
 ## How It Works
 
-A local Node.js server fetches data from Reddit every 6 hours using `curl` (Reddit blocks automated requests from cloud platforms). When new data is found, it commits and pushes to GitHub, which triggers a GitHub Pages deploy.
+A local Node.js server fetches data from Reddit using `curl` (Reddit blocks automated requests from cloud platforms). It fetches automatically on startup and daily at 6:30 PM KST. When new data is found, it commits and pushes to GitHub, which triggers a GitHub Pages deploy.
 
 The UI has two server-only buttons (hidden on the live site):
 - **Refresh** — fetch new data from Reddit

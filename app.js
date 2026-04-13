@@ -26,11 +26,6 @@ function showSkeleton() {
     dom.loading.style.display = 'block';
 }
 
-function getDateRange() {
-    const end = new Date();
-    return { start: new Date(end.getTime() - 86400000), end };
-}
-
 function switchSubreddit(subreddit, btn) {
     activeSubreddit = subreddit;
 
@@ -47,8 +42,7 @@ function switchSubreddit(subreddit, btn) {
     }
 
     restoreCollapseState();
-    const { start, end } = getDateRange();
-    loadReleases(start, end, currentMode);
+    loadReleases(currentMode);
 }
 
 function toggleCategory(category) {
@@ -75,12 +69,6 @@ async function fetchData(subreddit) {
     postCache[subreddit] = data.posts;
     lastFetchTime[subreddit] = data.fetched_at;
     return data.posts;
-}
-
-function filterPostsByDateRange(posts, startDate, endDate) {
-    const startTs = Math.floor(startDate.getTime() / 1000);
-    const endTs = Math.floor(endDate.getTime() / 1000);
-    return posts.filter(p => p.created_utc >= startTs && p.created_utc <= endTs);
 }
 
 function categorizePosts(posts, mode) {
@@ -184,28 +172,27 @@ function updateLastUpdated() {
     dom.lastUpdated.textContent = formatRelativeTime(lastFetchTime[activeSubreddit]);
 }
 
-function displayPosts(posts, startDate, endDate, mode) {
-    const filtered = filterPostsByDateRange(posts, startDate, endDate);
-    const categorized = categorizePosts(filtered, mode);
+function displayPosts(posts, mode) {
+    const categorized = categorizePosts(posts, mode);
     updateSectionHeaders(mode);
     renderResults(categorized);
     dom.loading.style.display = 'none';
     updateLastUpdated();
 }
 
-async function loadReleases(startDate, endDate, mode = 'releases') {
+async function loadReleases(mode = 'releases') {
     dom.error.style.display = 'none';
     const subreddit = activeSubreddit;
     const cached = postCache[subreddit];
 
     if (cached) {
-        displayPosts(cached, startDate, endDate, mode);
+        displayPosts(cached, mode);
     } else {
         showSkeleton();
         dom.results.style.display = 'none';
         try {
             const posts = await fetchData(subreddit);
-            displayPosts(posts, startDate, endDate, mode);
+            displayPosts(posts, mode);
         } catch (err) {
             dom.error.textContent = err.message || 'Failed to load releases';
             dom.error.style.display = 'block';
@@ -257,24 +244,21 @@ function initializeApp() {
         currentMode = 'releases';
         dom.btnReleases.classList.add('active');
         dom.btnTeasers.classList.remove('active');
-        const { start, end } = getDateRange();
-        loadReleases(start, end, 'releases');
+        loadReleases('releases');
     });
 
     dom.btnTeasers.addEventListener('click', () => {
         currentMode = 'teasers';
         dom.btnTeasers.classList.add('active');
         dom.btnReleases.classList.remove('active');
-        const { start, end } = getDateRange();
-        loadReleases(start, end, 'teasers');
+        loadReleases('teasers');
     });
 
     // Initial load — fetch active subreddit immediately, prefetch the other
     showSkeleton();
     dom.error.style.display = 'none';
     fetchData(activeSubreddit).then(posts => {
-        const { start, end } = getDateRange();
-        displayPosts(posts, start, end, currentMode);
+        displayPosts(posts, currentMode);
     }).catch(err => {
         dom.error.textContent = err.message || 'Failed to load releases';
         dom.error.style.display = 'block';
@@ -319,8 +303,7 @@ async function reloadData() {
     postCache.kpop = null;
     postCache.popheads = null;
     const posts = await fetchData(activeSubreddit);
-    const { start, end } = getDateRange();
-    displayPosts(posts, start, end, currentMode);
+    displayPosts(posts, currentMode);
     const other = activeSubreddit === 'kpop' ? 'popheads' : 'kpop';
     fetchData(other).catch(() => {});
 }
@@ -368,8 +351,7 @@ async function handleRefresh() {
             postCache.kpop = null;
             postCache.popheads = null;
             const posts = await fetchData(activeSubreddit);
-            const { start, end } = getDateRange();
-            displayPosts(posts, start, end, currentMode);
+            displayPosts(posts, currentMode);
             const other = activeSubreddit === 'kpop' ? 'popheads' : 'kpop';
             fetchData(other).catch(() => {});
 
